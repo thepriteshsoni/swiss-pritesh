@@ -1,0 +1,81 @@
+<!doctype html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/css/style1.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/notify.min.js" ></script>
+</head>
+<body>
+    <div class="container">
+
+        <div class="page-header text-center">
+            <h1>Administrator Module</h1>
+            <a href="/logout" class="btn btn-default btn-sm">Logout</a>
+        </div>
+
+        <div class="row">
+
+            <div class="col-sm-3 text-center">
+                <div class="well">
+                    <h2 class="text-primary text-center">ALL USERS</h2>
+                    <hr>
+                    <table class="tb" align="center">
+                        <tr>
+                            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User</th>
+                            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Status</th>
+                        </tr>
+                        <% for(var i = 0; i < pool.length; ++i) { %>
+                        <tr>
+                            <td><%= pool[i].username %> </td>
+                            <td><%= pool[i].status %> </td>
+                        </tr>
+                        <% } %>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-sm-6 text-center">
+                <div class="well">
+                    <h2 class="text-primary text-center">TOP 5 ACTIVE USERS</h2>
+                    <hr>
+                    <table align="center">
+                        <tr>
+                            <th>User Name</th>
+                            <th>No of tournaments</th>
+                            <th>No of matches</th>
+                        </tr>
+                        <% for(var i = 0; i < 5; ++i) { %>
+                        <tr>
+                            <td> <%= pool[i].username %> </td>
+                            <td> <%= pool[i].tours %> </td>
+                            <td> <%= pool[i].matches %> </td>
+                        </tr>
+                        <% } %>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-sm-3 text-center">
+                <div class="well">
+                    <h2 class="text-primary text-center">BLOCK USERS</h2>
+                    <hr>
+                    <table align="center">
+                        <tr>
+                            <select class="icx" name="buser">
+                                <% for(var i = 0; i < block.length; ++i) { %>
+                                    <option value="<%= block[i].username %>"><%= block[i].username %></option>
+                                <% } %>
+                            </select>
+                        </tr>
+                    </table>
+                    <hr>
+                    <button class="block-user">OK</button>
+                </div>
+            </div>
+    </div>
+<script src="/js/admin.js"></script>
+</body>
+</html>

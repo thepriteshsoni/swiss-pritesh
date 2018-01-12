@@ -2,11 +2,13 @@ body {
     padding-top:1px;
     word-wrap:break-word;
 }
-
 th, td {
     padding: 20px;
 }
-
 .winner-select {
     width: 80px;
+}
+canvas {
+    cursor: crosshair;
+    display: block;
 }

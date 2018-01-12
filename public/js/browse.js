@@ -1,22 +1,25 @@
 $(function() {
-
     var $players = $('.all-players');
     var $rank = $('.rankings');
     var $ep = $('.ep');
     var $pname = $('.p1');
     var $tour = $('.tour-id strong').text();
     var $cnt = 0;
-
-    function initialize() {
-        var r=4+parseInt(Math.random()*16);
-        for(var i=r; i--;) {
-            setTimeout(function() {
-                'createFirework(8,14,2,null,null,null,null,null,Math.random()>0.5,true)' },
-                (i+1)*(1+parseInt(Math.random()*1000)));
+    if($('.hidden').text()) {
+        $.ajax({
+            url: 'http://localhost:8000/js/fireworks.js',
+            dataType: "script",
+            success: function() {
+                light_blue_touchpaper();
+                $.notify.defaults({autoHide: false});
+                $.notify(
+                    'Tournament over! ' + $('.hidden').text() + ' emerged victorious!', 'info',
+                    { position: 'top center', autoHide: false}
+                );
+                $.notify.defaults({autoHide: true});
             }
-        return false;
+        });
     }
-
     $.ajax({
         type: 'GET',
         url: 'browse/'+ $tour +'',
@@ -43,23 +46,17 @@ $(function() {
             alert('error loading tournaments!');
         }
     });
-
     $('.new-player').on('click', function() {
-
         if($pname.val() == '') {
             $.notify(
                 'Player name is mandatory!', 'error',
                 { position: 'top center', autoHideDelay: 10000}
             );
         }
-
         else {
-
             var player = {
                 name: $pname.val()
             };
-
-
             $.ajax({
                 type: 'POST',
                 url: 'player/'+ $tour +'',
@@ -68,6 +65,7 @@ $(function() {
                 success: function(msg) {
                     $('.p1').val('');
                     var type = msg.id == 0 ? "error" : ( msg.id == -1 ) ? "info" : "success";
+                    $.notify.defaults({autoHideDelay: 5000});
                     $.notify(
                         msg.msg, type,
                         { position: 'top center', autoHideDelay: 10000}
@@ -87,27 +85,19 @@ $(function() {
                 error: function() {
                 }
             });
-
         }
-
     });
-
     $('.ex-player').on('click', function() {
-
         if(!$ep.val()) {
             $.notify(
                 'Empty input!', 'error',
                 { position: 'top center', autoHideDelay: 10000}
             );
         }
-
         else {
-
             var player = {
                 name: $ep.val()
             };
-
-
             $.ajax({
                 type: 'POST',
                 url: 'eplayer/'+ $tour +'',
@@ -138,13 +128,9 @@ $(function() {
                 error: function() {
                 }
             });
-
         }
-
     });
-
     $('.conduct').on('click', function() {
-
         $.ajax({
             type: 'GET',
             url: 'game/'+ $tour +'',
@@ -157,7 +143,6 @@ $(function() {
                     );
                 }
                 if(msg.id == 2) {
-                    initialize();
                 }
                 if(msg.id == 1) {
                     window.location.href = 'game/view/'+ $tour +'';
@@ -166,7 +151,5 @@ $(function() {
             error: function() {
             }
         });
-
     });
-
 });

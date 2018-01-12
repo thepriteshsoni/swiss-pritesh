@@ -1,27 +1,31 @@
-create table user (
-    username varchar(40) primary key,
-    status varchar(10)
+create table users (
+    email varchar(40) primary key,
+    password varchar(75),
+    status varchar(10) default 'ACTIVE',
+    id varchar(20) default null,
+    token varchar(200) default null
 );
 
-create table tournament (
-    user varchar(40) references user(username),
+create table tournaments (
+    user varchar(40) references users(email),
     name varchar(40),
     primary key (user, name)
 );
 
-create table player (
-    user varchar(40) references user(username),
-    tournament varchar(40) references tournament(name),
+create table players (
+    user varchar(40) references users(email),
+    tournament varchar(40) references tournaments(name),
     name varchar(40),
     primary key (user, tournament, name)
 );
 
-create table game (
+create table games (
     user varchar(40),
     tournament varchar(40),
     round int,
-    winner varchar(40) references player(name),
-    loser varchar(40) references player(name),
-    constraint game_user_tournament_FK foreign key (user, tournament) references tournament(user, name),
+    winner varchar(40) references players(name),
+    loser varchar(40) references players(name),
+    constraint games_users_tournaments_FK
+        foreign key (user, tournament) references tournaments(user, name),
     primary key (user, tournament, round, winner, loser)
 );

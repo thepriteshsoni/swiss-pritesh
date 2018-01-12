@@ -1,3 +1,9 @@
 module.exports = {
-    "url" : "mongodb://localhost:27017/pks"
+    connection: {
+        'host': 'localhost',
+        'user': 'root',
+        'password': 'activeAI@123',
+        'database': 'swiss'
+    },
+    users: 'users'
 };

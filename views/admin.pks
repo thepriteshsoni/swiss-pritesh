@@ -10,15 +10,12 @@
 </head>
 <body>
     <div class="container">
-
         <div class="page-header text-center">
             <h1>Administrator Module</h1>
             <a href="/logout" class="btn btn-default btn-sm">Logout</a>
         </div>
-
         <div class="row">
-
-            <div class="col-sm-3 text-center">
+            <div class="col-sm-4 text-center">
                 <div class="well">
                     <h2 class="text-primary text-center">ALL USERS</h2>
                     <hr>
@@ -27,37 +24,35 @@
                             <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;User</th>
                             <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Status</th>
                         </tr>
-                        <% for(var i = 0; i < pool.length; ++i) { %>
+                        {{#each pool}}
                         <tr>
-                            <td><%= pool[i].username %> </td>
-                            <td><%= pool[i].status %> </td>
+                            <td>{{email}}</td>
+                            <td>{{status}}</td>
                         </tr>
-                        <% } %>
+                        {{/each}}
                     </table>
                 </div>
             </div>
-
-            <div class="col-sm-6 text-center">
+            <div class="col-sm-5 text-center">
                 <div class="well">
                     <h2 class="text-primary text-center">TOP 5 ACTIVE USERS</h2>
                     <hr>
                     <table align="center">
                         <tr>
-                            <th>User Name</th>
+                            <th>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Username</th>
                             <th>No of tournaments</th>
                             <th>No of matches</th>
                         </tr>
-                        <% for(var i = 0; i < 5; ++i) { %>
+                        {{#each top}}
                         <tr>
-                            <td> <%= pool[i].username %> </td>
-                            <td> <%= pool[i].tours %> </td>
-                            <td> <%= pool[i].matches %> </td>
+                            <td>{{email}}</td>
+                            <td>{{tours}}</td>
+                            <td>{{matches}}</td>
                         </tr>
-                        <% } %>
+                        {{/each}}
                     </table>
                 </div>
             </div>
-
             <div class="col-sm-3 text-center">
                 <div class="well">
                     <h2 class="text-primary text-center">BLOCK USERS</h2>
@@ -65,9 +60,9 @@
                     <table align="center">
                         <tr>
                             <select class="icx" name="buser">
-                                <% for(var i = 0; i < block.length; ++i) { %>
-                                    <option value="<%= block[i].username %>"><%= block[i].username %></option>
-                                <% } %>
+                                {{#each block}}
+                                    <option value="{{email}}">{{email}}</option>
+                                {{/each}}
                             </select>
                         </tr>
                     </table>
@@ -75,7 +70,8 @@
                     <button class="block-user">OK</button>
                 </div>
             </div>
+        </div>
     </div>
-<script src="/js/admin.js"></script>
+    <script src="/js/admin.js"></script>
 </body>
 </html>

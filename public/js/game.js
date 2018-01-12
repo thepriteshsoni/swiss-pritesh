@@ -1,20 +1,14 @@
 $(function() {
-
     $('.report-game').on('click', function() {
-
-        $('.report-game').css({"display": "none"});
-        $('.fixtures').css({"display": "none"});
-
         var $tour = $('.tour-id strong').text();
         var $win = $('select.winning');
         var $h = $('.history');
-
         var rpg = { name: [] };
-
+        $('.report-game').css({"display": "none"});
+        $('.fixtures').css({"display": "none"});
         $win.each(function() {
             rpg.name.push($(this).val());
         });
-
         $.ajax({
             type: 'POST',
             url: 'report/'+ $tour +'',
@@ -45,7 +39,5 @@ $(function() {
             error: function() {
             }
         });
-
     });
-
 });

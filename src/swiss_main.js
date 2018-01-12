@@ -1,9 +1,8 @@
+var st = require ('./src/swiss_tournament.js');
 var argv = require('yargs')
     .usage("swiss_main --action=<action_name> [action params]")
     .demand("action")
     .argv
-
-var st = require ('./src/swiss_tournament.js');
 
 function printPlayerStandings(user, tournament){
     st.playerStandings(user, tournament, function(err, x) {

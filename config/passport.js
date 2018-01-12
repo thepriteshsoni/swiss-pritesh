@@ -1,129 +1,137 @@
 var LocalStrategy   = require('passport-local').Strategy;
 var FacebookStrategy = require('passport-facebook').Strategy;
-
-var User = require('../app/models/user');
-
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+var mysql = require('mysql');
+var dbconfig = require('./database');
+var connection = mysql.createConnection(dbconfig.connection);
+var bcrypt   = require('bcrypt-nodejs');
 var configAuth = require('./auth');
 var st = require('../src/swiss_tournament.js');
+var bodyParser = require('body-parser');
 
-module.exports = function(passport) {
-    // required for persistent login sessions
-    // passport needs ability to serialize and deserialize users out of session
-
+module.exports = function(passport){
     passport.serializeUser(function(user, done) {
-        done(null, user.id);
+        done(null, user.email);
     });
-
-    passport.deserializeUser(function(id, done) {
-        User.findById(id, function(err, user) {
-            done(err, user);
+    passport.deserializeUser(function(email, done) {
+        connection.query('select * from users where email = ?', [email], function(err, res) {
+            if(err){
+                return done(null,err);
+            }
+            done(null, res[0]);
         });
     });
-
     passport.use('local-signup', new LocalStrategy({
-        usernameField : 'username',
+        usernameField : 'email',
         passwordField : 'password',
-        passReqToCallback : true // allows us to pass back the entire request to the callback
+        passReqToCallback : true
     },
-    function(req, username, password, done) {
-        // asynchronous
-        // User.findOne wont fire unless data is sent back
+    function(req, email, password, done) {
         process.nextTick(function() {
-
-            User.findOne({ 'local.username' :  username }, function(err, user) {
-                if (err)
+            connection.query('select * from users where email = ?', [email], function(err,res){
+                if (err) {
                     return done(err);
-                if (user) {
-                    return done(null, false, req.flash('signupMessage', 'That username is already taken.'));
+                }
+                if (res.length) {
+                    return done(null, false, req.flash('signupMessage', 'That email is already taken.'));
                 }
                 else {
-                    st.registerUser(username, function(err, result) {
-                        if (!err) {
-                            console.log("record inserted!" + result);
-                        }
-                        else {
-                            console.log("err occured", err);
-                        }
-                        var newUser = new User();
-                        newUser.local.username = username;
-                        newUser.local.password = newUser.generateHash(password);
-                        newUser.save(function(err) {
-                            if (err)
-                                throw err;
-                            return done(null, newUser);
-                        });
+                    var newUser = new Object();
+                    var email = req.body.email;
+                    newUser.email = email;
+                    newUser.password = password;
+                    var status = 'ACTIVE';
+                    newUser.password = bcrypt.hashSync(password, bcrypt.genSaltSync(8), null);
+                    var query = 'insert into users values (?, ?, ?, null, null)';
+                    connection.query(query, [newUser.email, newUser.password, status], function(err,res){
+                        req.body.user = newUser.email;
+                        return done(null, newUser);
                     });
                 }
             });
         });
-
     }));
-
     passport.use('local-login', new LocalStrategy({
-        usernameField : 'username',
+        usernameField : 'email',
         passwordField : 'password',
-        passReqToCallback : true // allows us to pass back the entire request to the callback
+        passReqToCallback : true
     },
-    function(req, username, password, done) {
-
-        User.findOne({ 'local.username' :  username }, function(err, user) {
-            if (err)
+    function(req, email, password, done) {
+        connection.query('select * from users where email = ?', [email], function(err,res){
+            if (err) {
                 return done(err);
-            if (!user)
-                return done(null, false, req.flash('loginMessage', 'No user found.'));
-            if (!user.validPassword(password))
+            }
+            if (!res.length) {
+                return done(null, false, req.flash('loginMessage', 'No user found with that email!'));
+            }
+            if(res[0].password == 'THIRDPARTY') {
+                return done(null, false, req.flash('loginMessage', 'Kindly log-in with the registered social media handle!'));
+            }
+            if (!(bcrypt.compareSync(password, res[0].password))) {
                 return done(null, false, req.flash('loginMessage', 'Oops! Wrong password.'));
-
-            return done(null, user);
+            }
+            req.body.user = res[0].email;
+            return done(null, res[0]);
         });
-
     }));
-
     passport.use(new FacebookStrategy({
-        // pull in our app id and secret from our auth.js file
         clientID        : configAuth.facebookAuth.clientID,
         clientSecret    : configAuth.facebookAuth.clientSecret,
         callbackURL     : configAuth.facebookAuth.callbackURL,
         profileFields: ['id', 'displayName', 'photos', 'email']
     },
-    // facebook will send back the token and profile
     function(token, refreshToken, profile, done) {
-        // asynchronous
         process.nextTick(function() {
-
-            User.findOne({ 'facebook.id' : profile.id }, function(err, user) {
-                if (err)
+            connection.query('select * from users where email = ?', [profile._json.email], function(err, res){
+                if (err) {
                     return done(err);
-                if (user) {
-                    return done(null, user);
                 }
-                else {
-                    st.registerUser(profile.displayName, function(err, result) {
-                        if (!err) {
-                            console.log("record inserted!" + result);
+                else{
+                    var newUser = new Object();
+                    newUser.email = profile._json.email;
+                    newUser.password = 'THIRDPARTY';
+                    newUser.id = profile._json.id;
+                    newUser.token = token;
+                    var status = 'ACTIVE';
+                    var query= 'insert into users values (?, ?, ?, ?, ?)';
+                    connection.query(query, [newUser.email, newUser.password, status, newUser.id, token] , function(err, res){
+                        if(err) {
                         }
-                        else {
-                            console.log("err occured", err);
-                        }
-                        var newUser = new User();
-
-                        newUser.facebook.id    = profile.id;
-                        newUser.facebook.token = token;
-                        newUser.facebook.name  = profile.displayName;
-
-                        newUser.save(function(err) {
-                            if (err)
-                                throw err;
-
-                            // if successful, return the new user
-                            return done(null, newUser);
-                        });
+                        return done(null, newUser);
                     });
                 }
             });
         });
     }));
-
+    passport.use(new GoogleStrategy({
+        clientID        : configAuth.googleOAuth.clientID,
+        clientSecret    : configAuth.googleOAuth.clientSecret,
+        callbackURL     : configAuth.googleOAuth.callbackURL,
+        profileFields: ['id', 'displayName', 'photos', 'email']
+    },
+    function(token, refreshToken, profile, done) {
+        process.nextTick(function() {
+            connection.query('select * from users where email = ?', [profile._json.emails[0].value], function(err, res){
+                if (err) {
+                    return done(err);
+                }
+                else{
+                    var newUser = new Object();
+                    newUser.email = profile._json.emails[0].value;
+                    newUser.password = 'THIRDPARTY';
+                    newUser.id = profile._json.id;
+                    newUser.token = token;
+                    var status = 'ACTIVE';
+                    var query= 'insert into users values (?, ?, ?, ?, ?)';
+                    connection.query(query, [newUser.email, newUser.password, status, newUser.id, token] , function(err, res){
+                        if(err) {
+                        }
+                        return done(null, newUser);
+                    });
+                }
+            });
+        });
+    }));
 };
 
 

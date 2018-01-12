@@ -1,5 +1,4 @@
 var mysql = require('mysql');
-
 var Game = require('./swiss_library.js').Game;
 var Tournament = require('./swiss_library.js').Tournament;
 
@@ -7,7 +6,7 @@ function getConnection() {
     var connection = mysql.createConnection({
         host: "localhost",
         user: "root",
-        password: "mountblue",
+        password: "activeAI@123",
         database: "swiss"
     });
     connection.connect(function (err) {
@@ -19,20 +18,19 @@ function getConnection() {
 
 function getTournaments(user, cb) {
     var connection = getConnection();
-    var sql = 'select name from tournament where user = ?';
+    var sql = 'select name from tournaments where user = ?';
     connection.query(sql, [user], function(err, result) {
         connection.end();
         if(err) {
             cb(err, 0);
         }
-        console.log(result);
         cb(null, result);
     });
 }
 
 function registerUser(username, cb) {
     var connection = getConnection();
-    var sql = 'insert into user(username) values (?)';
+    var sql = 'insert into users(email) values (?)';
     connection.query(sql, [username], function (err, result) {
         connection.end();
         if (err) {
@@ -44,7 +42,7 @@ function registerUser(username, cb) {
 
 function checkStatus(user, cb) {
     var connection = getConnection();
-    var sql = 'select status from user where username = ?';
+    var sql = 'select status from users where email = ?';
     connection.query(sql, user, function (err, result) {
         connection.end();
         if (err) {
@@ -56,7 +54,7 @@ function checkStatus(user, cb) {
 
 function getPlayers(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'select name from player where user = ? and tournament = ?';
+    var sql = 'select name from players where user = ? and tournament = ?';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -68,7 +66,7 @@ function getPlayers(user, tournament, cb) {
 
 function createTournament(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'insert into tournament values (?, ?)';
+    var sql = 'insert into tournaments values (?, ?)';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -82,10 +80,9 @@ function createTournament(user, tournament, cb) {
 
 function checkTournamentStatus(user, tourney, cb) {
     var connection = getConnection();
-    var sql = 'select count(*) as nom from game where user = ? and tournament = ?';
+    var sql = 'select count(*) as nom from games where user = ? and tournament = ?';
     connection.query(sql, [user, tourney], function(err, result) {
         connection.end();
-        console.log(result);
         if(err) {
             cb(err, 0);
         }
@@ -94,7 +91,6 @@ function checkTournamentStatus(user, tourney, cb) {
 }
 
 function registerPlayer(user, tournament, player, cb) {
-    console.log('register')
     checkTournamentStatus(user, tournament, function (err, result) {
         if(err) {
             throw err;
@@ -104,7 +100,6 @@ function registerPlayer(user, tournament, player, cb) {
                 cb(null, 0);
             }
             else {
-                console.log("here");
                 insertPlayer(user, tournament, player, cb);
             }
         }
@@ -113,7 +108,7 @@ function registerPlayer(user, tournament, player, cb) {
 
 function insertPlayer(user, tournament, player, cb) {
     var connection = getConnection();
-    var sql = 'insert into player values (?, ?, ?)';
+    var sql = 'insert into players values (?, ?, ?)';
     connection.query(sql, [user, tournament, player], function (err, result) {
         connection.end();
         if (err) {
@@ -128,7 +123,7 @@ function insertPlayer(user, tournament, player, cb) {
 // uncertain function
 function deletePlayers(cb) {
     var connection = getConnection();
-    var sql = 'truncate table player';
+    var sql = 'truncate table players';
     connection.query(sql, function (err, result) {
         connection.end();
         if (err) {
@@ -140,7 +135,7 @@ function deletePlayers(cb) {
 
 function playerCount(user, tournament, cb){
     var connection = getConnection();
-    var sql = 'select count(*) as total_players from player where user = ? and tournament = ?';
+    var sql = 'select count(*) as total_players from players where user = ? and tournament = ?';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -152,7 +147,7 @@ function playerCount(user, tournament, cb){
 
 function buildTournament(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'select * from game where user = ? and tournament = ?';
+    var sql = 'select * from games where user = ? and tournament = ?';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -170,12 +165,11 @@ function buildTournament(user, tournament, cb) {
 function reportGame(user, tourney, round, winner, loser, cb) {
     buildTournament(user, tourney, function(err, tournament){
         if (tournament.hasPlayedInRound(round, winner, loser)) {
-            console.log(`Player ${winner} and player ${loser} have faced each other in round ${round}`);
             cb(null, 0);
         }
         else {
             var connection = getConnection();
-            var query = 'insert into game values (?, ?, ?, ?, ?)';
+            var query = 'insert into games values (?, ?, ?, ?, ?)';
             connection.query(query, [user, tourney, round, winner, loser], function (err, result) {
                 connection.end();
                 if (err) {
@@ -190,7 +184,7 @@ function reportGame(user, tourney, round, winner, loser, cb) {
 // uncertain function
 function deleteMatches(cb) {
     var connection = getConnection();
-    connection.query('delete from game', function (error, results, fields) {
+    connection.query('delete from games', function (error, results, fields) {
         connection.end();
         if (error) {
             cb(error, 0);
@@ -205,20 +199,21 @@ function playerStandings(user, tournament, cb) {
         select p.name, (ifnull(ws.wins,0) + ifnull(ls.losses,0)) as games_played,
         ifnull(ws.wins, 0) as wins
         from
-            player p
+            players p
             left outer join
-            ((select winner, count(*) as wins from game where user = ?
+            ((select winner, count(*) as wins from games where user = ?
                 and tournament = ?
                 group by winner) as ws)
                     on (p.name = ws.winner)
             left outer join
-            ((select loser, count(*) as losses from game where user = ?
+            ((select loser, count(*) as losses from games where user = ?
                 and tournament = ?
                 group by loser) as ls)
                     on (p.name = ls.loser)
         where user = ? and tournament = ?
         order by
-        wins desc;`
+        wins desc;
+        `;
     connection.query(query, [user, tournament, user, tournament, user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -230,7 +225,7 @@ function playerStandings(user, tournament, cb) {
                 name: res.name,
                 matches: res.games_played,
                 wins: res.wins
-            })
+            });
         }
         cb(null, out);
     });
@@ -238,17 +233,15 @@ function playerStandings(user, tournament, cb) {
 
 function gamesHistory(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'select round, winner, loser from game where user = ? and tournament = ?';
+    var sql = 'select round, winner, loser from games where user = ? and tournament = ?';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
             cb(err, -1);
         }
         else {
-            console.log('Hey' + result);
             cb(null, result);
         }
-
     });
 }
 
@@ -276,12 +269,12 @@ function swissPairings(user, tournament, cb) {
                 cb(null, pairings);
             });
         }
-    })
+    });
 }
 
 function nextRound(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'select ifnull(max(round), 0) as nxt from game where user = ? and tournament = ?';
+    var sql = 'select ifnull(max(round), 0) as nxt from games where user = ? and tournament = ?';
     connection.query(sql, [user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -291,9 +284,20 @@ function nextRound(user, tournament, cb) {
     });
 }
 
+function getWinner(user, tournament, cb) {
+    playerStandings(user, tournament, function(err, playerStandings) {
+        if (err) {
+            throw err;
+        }
+        else {
+            cb(null, playerStandings[0].name);
+        }
+    });
+}
+
 function getExistingPlayers(user, tournament, cb) {
     var connection = getConnection();
-    var sql = 'select distinct name from player where user = ? and tournament <> ? and name not in (select name from player where user = ? and tournament = ?)';
+    var sql = 'select distinct name from players where user = ? and tournament <> ? and name not in (select name from players where user = ? and tournament = ?)';
     connection.query(sql, [user, tournament, user, tournament], function (err, result) {
         connection.end();
         if (err) {
@@ -318,5 +322,6 @@ module.exports = {
     nextRound: nextRound,
     gamesHistory: gamesHistory,
     getExistingPlayers: getExistingPlayers,
-    checkStatus: checkStatus
+    checkStatus: checkStatus,
+    getWinner: getWinner
 }

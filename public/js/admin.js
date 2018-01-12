@@ -1,18 +1,14 @@
 $(function() {
-
     $('.block-user').on('click', function() {
-
         if(!$('.icx').val()) {
             $.notify(
                 'Empty input!', 'error',
                 { position: 'top center', autoHideDelay: 10000}
             );
         }
-
         var user = {
             name : $('.icx').val()
         }
-
         $.ajax({
             type: 'POST',
             url: 'admin/block',
@@ -37,5 +33,4 @@ $(function() {
             }
         });
     });
-
 });

@@ -5,64 +5,137 @@ var adminRouter = require('./admin.js').adminRouter;
 
 module.exports = function(app, passport) {
 
-    app.use(express.static(__dirname + '/../public'));
-
     app.use('/admin', isLoggedIn, adminRouter);
-
-    app.use('/tournament',isLoggedIn, swissRouter);
-
+    app.use('/tournament', isLoggedIn, swissRouter);
     app.get('/', function(req, res) {
-        res.render('index.ejs');
+        if(req.isAuthenticated()) {
+            return res.redirect('/profile');
+        }
+        res.render('index.pks');
     });
-
     app.get('/login', function(req, res) {
-        res.render('login.ejs', { message: req.flash('loginMessage') });
+        if(req.isAuthenticated()) {
+            return res.redirect('/profile');
+        }
+        res.render('login.pks', { message: req.flash('loginMessage') });
     });
-
-    app.post('/login', passport.authenticate('local-login', {
-        successRedirect : '/profile',
-        failureRedirect : '/login',
-        failureFlash : true
-    }));
-
+    app.post('/login', function(req, res, next) {
+        passport.authenticate('local-login', { failureFlash : true }, function(err, user, info) {
+            if (err) {
+                 res.status(500).send(JSON.stringify({
+                    'msg': "Internal Server Error"
+                }));
+            }
+            if (!user) {
+                return res.render('login.pks', { message: req.flash('loginMessage') });
+            }
+            req.login(user, function(err) {
+                if (err) return next(err);
+                req.session.save(function(err) {
+                    if (!err) {
+                        return res.redirect('/profile');
+                    }
+                    else {
+                        console.log('error occured during session save');
+                    }
+                });
+            });
+        })(req, res, next);
+    });
     app.get('/signup', function(req, res) {
-        res.render('signup.ejs', { message: req.flash('signupMessage') });
+        if(req.isAuthenticated()) {
+            return res.redirect('/profile');
+        }
+        res.render('signup.pks', { message: req.flash('signupMessage') });
     });
-
-    app.post('/signup', passport.authenticate('local-signup', {
-        successRedirect : '/profile',
-        failureRedirect : '/signup',
-        failureFlash : true
-    }));
-
+    app.post('/signup', function(req, res, next) {
+        passport.authenticate('local-signup', { failureFlash : true }, function(err, user, info) {
+            if (err) {
+                 res.status(500).send(JSON.stringify({
+                    'msg': "Internal Server Error"
+                }));
+            }
+            if (!user) {
+               return res.render('signup.pks', { message: req.flash('signupMessage') });
+            }
+            req.login(user, function(err) {
+                if (err) return next(err);
+                req.session.save(function(err) {
+                    if (!err) {
+                        return res.redirect('/profile');
+                    }
+                    else {
+                        console.log('error occured during session save');
+                    }
+                });
+            });
+        })(req, res, next);
+    });
     app.get('/profile', isLoggedIn, function(req, res) {
-        console.log(req.user.local.username);
-        if(req.user.local.username == 'admin') {
+        if(req.user.email == 'admin@admin') {
             res.redirect('/admin');
         }
         else {
-            res.render('profile.ejs', {
+            res.render('profile.pks', {
                 user : req.user
             });
         }
     });
-
     app.get('/auth/facebook', passport.authenticate('facebook', { scope : 'email' }));
-
-    // handle the callback after facebook has authenticated the user
-    app.get('/auth/facebook/callback',
-        passport.authenticate('facebook', {
-            successRedirect : '/profile',
-            failureRedirect : '/'
-        }));
-
+    app.get('/auth/facebook/callback', function(req, res, next) {
+        passport.authenticate('facebook', function(err, user, info) {
+            if (err) {
+                 res.status(500).send(JSON.stringify({
+                    'msg': "Internal Server Error"
+                }));
+            }
+            if (!user) {
+                return res.redirect('/');
+            }
+            req.login(user, function(err) {
+                if (err) return next(err);
+                req.session.save(function(err) {
+                    if (!err) {
+                        res.redirect('/profile');
+                    }
+                    else {
+                        console.log('error occured during session save');
+                    }
+                });
+            });
+        })(req, res, next);
+    });
+    app.get('/auth/google', passport.authenticate('google', { scope : 'email' }));
+    app.get('/auth/google/callback', function(req, res, next) {
+        passport.authenticate('google', function(err, user, info) {
+            if (err) {
+                 res.status(500).send(JSON.stringify({
+                    'msg': "Internal Server Error"
+                }));
+            }
+            if (!user) {
+                return res.redirect('/');
+            }
+            req.login(user, function(err) {
+                if (err) return next(err);
+                req.session.save(function(err) {
+                    if (!err) {
+                        res.redirect('/profile');
+                    }
+                    else {
+                        console.log('error occured during session save');
+                    }
+                });
+            });
+        })(req, res, next);
+    });
     app.get('/logout', function(req, res) {
         req.logout();
+        req.session.destroy();
         res.redirect('/');
     });
 };
 
-// route middleware to make sure a user is logged in
 function isLoggedIn(req, res, next) {
     if (req.isAuthenticated()) {
         return next();

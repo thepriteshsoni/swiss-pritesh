@@ -1,8 +1,6 @@
 $(function() {
-
     var $tours = $('.all-tours');
     var $tname = $('.tname');
-
     $.ajax({
         type: 'GET',
         url: 'tournament/gettours',
@@ -15,23 +13,17 @@ $(function() {
             alert('error loading tournaments!');
         }
     });
-
     $('.add-tour').on('click', function() {
-
         if($tname.val() == '') {
             $.notify(
                 'Tournament name is mandatory!', 'error',
                 { position: 'top center', autoHideDelay: 10000}
             );
         }
-
         else {
-
             var tour = {
                 name: $tname.val()
             };
-
-
             $.ajax({
                 type: 'POST',
                 url: 'tournament/new',
@@ -43,6 +35,7 @@ $(function() {
                         { globalPosition: 'top center', autoHideDelay: 10000}
                     );
                     $tours.append('<h3><a href="/tournament/'+ newTour +'"> '+ newTour +' </a></h3>');
+                    $tname.val('');
                 },
                 error: function() {
                     $.notify(
@@ -51,9 +44,6 @@ $(function() {
                     );
                 }
             });
-
         }
-
     });
-
 });

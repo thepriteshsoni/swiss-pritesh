@@ -27,7 +27,7 @@ Installation and runtime guide:
 2. Go to command-line and type 'git clone <paste the link copied in step 1>' and hit enter.
 3. Navigate to the cloned repository through command-line, and run 'npm install' to get all the required node-modules.
 4. Create a database in your local mysql instance.
-5. Naviage to swiss-pritesh/config. Open 'database.js' and modify the database credentials ( user, password and the database created in Step 4 ) as per your mysql configuration.
+5. Navigate to swiss-pritesh/config. Open 'database.js' and modify the database credentials ( user, password and the database created in Step 4 ) as per your mysql configuration.
 5. Go to swiss-pritesh/app/models and execute the 'swiss-script.sql' in order to make the back-end ready.
 6. Inside the root folder, type 'node server' and hit enter in the command-line.
 7. Open your browser and type 'localhost:8000'.
